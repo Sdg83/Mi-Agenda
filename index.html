@@ -1,0 +1,141 @@
+<title>Mi Agenda</title>
+🎂
+ALARMA
+Cumpleaños de Laura
+Hoy · 09:00
+⏱ Snooze 10 min ✕ Descartar
+Mi Agenda
+S
+Dashboard Calendario Alarmas Ajustes
+<!-- Summary strip -->
+<div class="summary-strip">
+  <div class="sum-card" onclick="filterByType('task')">
+    <div class="sum-num blue" id="countTask">0</div>
+    <div class="sum-label">Tareas</div>
+  </div>
+  <div class="sum-card" onclick="filterByType('trabajo')">
+    <div class="sum-num amber" id="countTrabajo">0</div>
+    <div class="sum-label">Trabajos</div>
+  </div>
+  <div class="sum-card" onclick="filterByType('cumple')">
+    <div class="sum-num pink" id="countCumple">0</div>
+    <div class="sum-label">Cumpleaños</div>
+  </div>
+  <div class="sum-card" onclick="filterByType('evento')">
+    <div class="sum-num green" id="countEvento">0</div>
+    <div class="sum-label">Eventos</div>
+  </div>
+</div>
+
+<!-- Filter chips -->
+<div class="filter-bar">
+  <button class="chip active" data-filter="all" onclick="applyFilter('all', this)">Todos</button>
+  <button class="chip" data-filter="task" onclick="applyFilter('task', this)">✅ Tareas</button>
+  <button class="chip" data-filter="trabajo" onclick="applyFilter('trabajo', this)">🔧 Trabajos</button>
+  <button class="chip" data-filter="cumple" onclick="applyFilter('cumple', this)">🎂 Cumpleaños</button>
+  <button class="chip" data-filter="evento" onclick="applyFilter('evento', this)">🎉 Eventos</button>
+</div>
+
+<div id="eventsList" class="events-area"></div>
+<div class="empty-state" id="emptyState" style="display:none">
+  <div class="empty-icon">📋</div>
+  <div class="empty-text">No hay eventos para mostrar</div>
+  <div class="empty-sub">Tocá + para agregar uno nuevo</div>
+</div>
+‹
+›
+DoLuMaMiJuViSa
+🔔
+No hay alarmas activas
+Creá un evento con alarma
+Notificaciones
+Notificaciones push
+Vibración por defecto
+Sonido por defecto
+Tipo de alarma Chime suave Campana Pulso Alerta
+▶️ Probar sonido
+Datos
+Limpiar eventos completados Limpiar
+Exportar datos (JSON) Exportar
+Acerca de
+Versión1.0.0
+Eventos guardados0
++
+Nuevo evento
+✕
+<div class="type-grid">
+  <div class="type-btn selected" data-type="task" onclick="selectType('task', this)">
+    <span class="type-emoji">✅</span>
+    <span class="type-label">Tarea</span>
+  </div>
+  <div class="type-btn" data-type="trabajo" onclick="selectType('trabajo', this)">
+    <span class="type-emoji">🔧</span>
+    <span class="type-label">Trabajo</span>
+  </div>
+  <div class="type-btn" data-type="cumple" onclick="selectType('cumple', this)">
+    <span class="type-emoji">🎂</span>
+    <span class="type-label">Cumpleaños</span>
+  </div>
+  <div class="type-btn" data-type="evento" onclick="selectType('evento', this)">
+    <span class="type-emoji">🎉</span>
+    <span class="type-label">Evento</span>
+  </div>
+</div>
+
+<div class="field">
+  <label class="field-label">Nombre</label>
+  <input class="field-input" type="text" id="inputName" placeholder="ej. Reunión con cliente..." autocomplete="off" />
+</div>
+
+<div class="row-fields">
+  <div class="field">
+    <label class="field-label">Fecha</label>
+    <input class="field-input" type="date" id="inputDate" />
+  </div>
+  <div class="field">
+    <label class="field-label">Hora</label>
+    <input class="field-input" type="time" id="inputTime" />
+  </div>
+</div>
+
+<div class="row-fields">
+  <div class="field">
+    <label class="field-label">Alarma</label>
+    <select class="field-input" id="inputAlarm">
+      <option value="none">Sin alarma</option>
+      <option value="5">5 min antes</option>
+      <option value="15" selected>15 min antes</option>
+      <option value="30">30 min antes</option>
+      <option value="60">1 hora antes</option>
+      <option value="1440">1 día antes</option>
+    </select>
+  </div>
+  <div class="field">
+    <label class="field-label">Sonido</label>
+    <select class="field-input" id="inputSound">
+      <option value="chime">Chime</option>
+      <option value="bell">Campana</option>
+      <option value="pulse">Pulso</option>
+      <option value="alert">Alerta</option>
+    </select>
+  </div>
+</div>
+
+<div class="field">
+  <label class="field-label">Nota (opcional)</label>
+  <textarea class="field-input" id="inputNote" rows="2" placeholder="Detalles adicionales..."></textarea>
+</div>
+
+<div class="toggles-group">
+  <div class="toggle-row" id="repeatRow" style="display:none">
+    <span class="toggle-label">Repetir anualmente</span>
+    <div class="toggle" id="toggleRepeat" onclick="toggleField('repeat', this)"></div>
+  </div>
+  <div class="toggle-row">
+    <span class="toggle-label">Vibración</span>
+    <div class="toggle on" id="toggleVib" onclick="toggleField('vib', this)"></div>
+  </div>
+</div>
+
+<button class="save-btn" onclick="saveEvent()">Guardar evento</button>
+<script src="app.js"></script>
