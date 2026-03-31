@@ -1,141 +1,723 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111114">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Agenda">
 <title>Mi Agenda</title>
-🎂
-ALARMA
-Cumpleaños de Laura
-Hoy · 09:00
-⏱ Snooze 10 min ✕ Descartar
-Mi Agenda
-S
-Dashboard Calendario Alarmas Ajustes
-<!-- Summary strip -->
-<div class="summary-strip">
-  <div class="sum-card" onclick="filterByType('task')">
-    <div class="sum-num blue" id="countTask">0</div>
-    <div class="sum-label">Tareas</div>
-  </div>
-  <div class="sum-card" onclick="filterByType('trabajo')">
-    <div class="sum-num amber" id="countTrabajo">0</div>
-    <div class="sum-label">Trabajos</div>
-  </div>
-  <div class="sum-card" onclick="filterByType('cumple')">
-    <div class="sum-num pink" id="countCumple">0</div>
-    <div class="sum-label">Cumpleaños</div>
-  </div>
-  <div class="sum-card" onclick="filterByType('evento')">
-    <div class="sum-num green" id="countEvento">0</div>
-    <div class="sum-label">Eventos</div>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg0:#111114;--bg1:#1a1a20;--bg2:#222229;--bg3:#2a2a34;--bg4:#32323f;
+  --t1:#f0f0f8;--t2:#8080a0;--t3:#404060;
+  --acc:#7b6ff6;--acc2:#a89eff;
+  --blue:#5fa4f8;--amber:#f8c140;--pink:#f472b5;--green:#34d19a;--coral:#f87070;
+}
+html,body{height:100%;background:var(--bg0);overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;color:var(--t1);-webkit-font-smoothing:antialiased}
+
+/* ── LAYOUT ── */
+#app{max-width:430px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;background:var(–bg0)}
+
+/* ── HEADER ── */
+.hdr{display:flex;justify-content:space-between;align-items:center;padding:54px 20px 14px;background:var(–bg0);border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.hdr-left h1{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(–t1)}
+.hdr-left p{font-size:12px;color:var(–t2);margin-top:2px}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(–acc),var(–pink));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+
+/* ── TABS ── */
+.tabs{display:flex;padding:10px 12px;gap:6px;background:var(–bg0);overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:6px 16px;font-size:13px;font-weight:500;color:var(–t2);cursor:pointer;white-space:nowrap;background:transparent;font-family:inherit;transition:all .2s;flex-shrink:0}
+.tab.on{background:var(–acc);border-color:var(–acc);color:#fff}
+
+/* ── CONTENT PANELS ── */
+.panel{display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:90px}
+.panel.on{display:block}
+.panel::-webkit-scrollbar{display:none}
+
+/* ── SUMMARY CARDS ── */
+.sums{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px 12px 6px}
+.sc{background:var(–bg2);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px 6px;text-align:center;cursor:pointer}
+.sc-n{font-size:22px;font-weight:700;line-height:1}
+.sc-n.b{color:var(–blue)}.sc-n.a{color:var(–amber)}.sc-n.p{color:var(–pink)}.sc-n.g{color:var(–green)}
+.sc-l{font-size:9px;color:var(–t2);margin-top:4px;text-transform:uppercase;letter-spacing:.5px;font-weight:500}
+
+/* ── FILTERS ── */
+.filters{display:flex;gap:7px;padding:8px 12px;overflow-x:auto;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.chip{border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:5px 13px;font-size:12px;font-weight:500;color:var(–t2);cursor:pointer;white-space:nowrap;background:var(–bg2);font-family:inherit;transition:all .15s;flex-shrink:0}
+.chip.on{border-color:var(–acc);color:var(–acc2);background:rgba(123,111,246,.12)}
+
+/* ── DATE DIVIDER ── */
+.ddiv{display:flex;align-items:center;gap:8px;padding:12px 12px 6px;font-size:10px;font-weight:600;color:var(–t3);text-transform:uppercase;letter-spacing:.8px}
+.ddiv::after{content:’’;flex:1;height:1px;background:rgba(255,255,255,.05)}
+
+/* ── EVENT CARD ── */
+.ec{background:var(–bg1);border:1px solid rgba(255,255,255,.06);border-radius:14px;margin:0 12px 8px;padding:12px 13px;display:flex;align-items:center;gap:10px;position:relative;overflow:hidden;cursor:pointer;transition:background .15s}
+.ec:active{background:var(–bg2)}
+.ec::before{content:’’;position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 2px 2px 0}
+.ec.task::before{background:var(–blue)}.ec.trabajo::before{background:var(–amber)}
+.ec.cumple::before{background:var(–pink)}.ec.evento::before{background:var(–green)}
+.ec.done{opacity:.4}
+.ec.done .ec-name{text-decoration:line-through;color:var(–t3)}
+
+.chk{width:22px;height:22px;border-radius:50%;border:1.5px solid var(–bg4);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .18s;cursor:pointer}
+.chk.on{background:var(–green);border-color:var(–green)}
+.chk.on::after{content:‘✓’;font-size:11px;color:var(–bg0);font-weight:700}
+
+.ec-ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.ec-ico.task{background:rgba(95,164,248,.1)}.ec-ico.trabajo{background:rgba(248,193,64,.1)}
+.ec-ico.cumple{background:rgba(244,114,181,.1)}.ec-ico.evento{background:rgba(52,209,154,.1)}
+
+.ec-info{flex:1;min-width:0}
+.ec-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ec-meta{font-size:11px;color:var(–t2);margin-top:3px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.bdg{font-size:10px;padding:2px 7px;border-radius:6px;font-weight:500}
+.bdg-a{background:rgba(123,111,246,.15);color:var(–acc2)}
+.bdg-r{background:rgba(244,114,181,.12);color:var(–pink)}
+
+.ec-time{font-size:13px;font-weight:600;flex-shrink:0;color:var(–t1)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:50px 20px}
+.empty-i{font-size:44px;margin-bottom:12px}
+.empty-t{font-size:15px;font-weight:500;color:var(–t2)}
+.empty-s{font-size:12px;color:var(–t3);margin-top:5px}
+
+/* ── CALENDAR ── */
+.cal-wrap{padding:14px}
+.cal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cal-my{font-size:17px;font-weight:600}
+.cal-nav{background:var(–bg2);border:1px solid rgba(255,255,255,.08);border-radius:10px;width:36px;height:36px;font-size:18px;color:var(–t1);cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center}
+.cal-wk{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px}
+.cal-wk span{text-align:center;font-size:10px;font-weight:600;color:var(–t3);text-transform:uppercase;padding:3px 0}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cday{aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:var(–t2);transition:background .15s}
+.cday:active{background:var(–bg3)}
+.cday.hev{color:var(–t1);font-weight:500}
+.cday.tod{background:var(–acc);color:#fff;font-weight:700}
+.cday.sel{background:var(–bg3);color:var(–acc2);border:1px solid rgba(123,111,246,.4)}
+.cday.oth{color:var(–t3)}
+.cdot{width:4px;height:4px;border-radius:50%;margin-top:1px;background:var(–acc2)}
+.cday.tod .cdot{background:rgba(255,255,255,.6)}
+.cal-sel-title{font-size:12px;font-weight:600;color:var(–t2);text-transform:uppercase;letter-spacing:.6px;padding:12px 0 8px}
+
+/* ── ALARMS TAB ── */
+.alarm-item{background:var(–bg1);border:1px solid rgba(255,255,255,.06);border-radius:14px;margin:0 12px 10px;padding:14px;display:flex;align-items:center;gap:12px}
+.ai-ico{font-size:22px;flex-shrink:0}
+.ai-info{flex:1}
+.ai-name{font-size:14px;font-weight:500}
+.ai-when{font-size:11px;color:var(–t2);margin-top:3px}
+
+/* ── SETTINGS ── */
+.settings-wrap{padding:14px}
+.stitle{font-size:10px;font-weight:600;color:var(–t3);text-transform:uppercase;letter-spacing:.8px;padding:14px 0 6px}
+.sblock{background:var(–bg1);border:1px solid rgba(255,255,255,.06);border-radius:14px;overflow:hidden;margin-bottom:6px}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid rgba(255,255,255,.04);font-size:14px}
+.srow:last-child{border-bottom:none}
+.sv{color:var(–t2);font-size:13px}
+.ssel{background:var(–bg2);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 10px;color:var(–t1);font-size:13px;font-family:inherit;outline:none}
+.sbtn{border-radius:10px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:inherit;border:1px solid}
+.sbtn-d{background:rgba(248,112,112,.1);border-color:rgba(248,112,112,.25);color:var(–coral)}
+.sbtn-o{background:var(–bg3);border-color:rgba(255,255,255,.1);color:var(–t1)}
+.sbtn-s{background:rgba(123,111,246,.15);border-color:rgba(123,111,246,.3);color:var(–acc2)}
+
+/* ── TOGGLE ── */
+.tog{width:44px;height:26px;border-radius:13px;background:var(–bg4);cursor:pointer;position:relative;transition:background .22s;flex-shrink:0}
+.tog.on{background:var(–acc)}
+.tog::after{content:’’;position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .22s;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.tog.on::after{transform:translateX(18px)}
+
+/* ── FAB ── */
+.fab{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));right:50%;transform:translateX(calc(50% + 155px));width:54px;height:54px;border-radius:50%;background:var(–acc);border:none;color:#fff;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(123,111,246,.5);transition:transform .15s,box-shadow .15s;font-family:inherit;z-index:40;line-height:1}
+.fab:active{transform:translateX(calc(50% + 155px)) scale(.94);box-shadow:0 2px 10px rgba(123,111,246,.4)}
+
+/* ── MODAL ── */
+.mbk{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;align-items:flex-end;justify-content:center}
+.mbk.on{display:flex}
+.modal{background:var(–bg1);border:1px solid rgba(255,255,255,.08);border-radius:22px 22px 0 0;width:100%;max-width:430px;padding:0 16px calc(16px + env(safe-area-inset-bottom,0px));max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;animation:sup .28s ease}
+.modal::-webkit-scrollbar{display:none}
+@keyframes sup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mhandle{width:34px;height:4px;border-radius:2px;background:var(–bg4);margin:12px auto 16px}
+.mtop{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.mtitle{font-size:17px;font-weight:600}
+.mclose{background:var(–bg3);border:1px solid rgba(255,255,255,.08);border-radius:50%;width:28px;height:28px;font-size:13px;color:var(–t2);cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center}
+
+/* type buttons */
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.tbtn{background:var(–bg2);border:1px solid rgba(255,255,255,.07);border-radius:13px;padding:13px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:all .15s}
+.tbtn.on{border-color:var(–acc);background:rgba(123,111,246,.1)}
+.tbtn-ico{font-size:22px}
+.tbtn-lbl{font-size:12px;font-weight:500;color:var(–t2);font-family:inherit}
+.tbtn.on .tbtn-lbl{color:var(–acc2)}
+
+/* form */
+.fl{margin-bottom:11px}
+.fl label{display:block;font-size:10px;font-weight:600;color:var(–t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+.fi{width:100%;background:var(–bg2);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:11px 13px;color:var(–t1);font-size:15px;font-family:inherit;outline:none;-webkit-appearance:none;appearance:none}
+.fi:focus{border-color:var(–acc)}
+.fi option{background:var(–bg1)}
+textarea.fi{resize:none;line-height:1.5}
+.rr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* toggles in modal */
+.trows{border-top:1px solid rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:14px}
+.trow{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:14px}
+.trow:last-child{border-bottom:none}
+
+.sbtn2{width:100%;background:var(–acc);border:none;border-radius:13px;padding:14px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 3px 14px rgba(123,111,246,.4);transition:opacity .15s}
+.sbtn2:active{opacity:.82}
+
+/* ── ALARM TOAST ── */
+.toast{display:none;position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%);z-index:200;width:calc(100% - 28px);max-width:400px;background:var(–bg2);border:1px solid rgba(123,111,246,.35);border-radius:18px;padding:13px 15px;gap:12px;align-items:flex-start;box-shadow:0 8px 32px rgba(0,0,0,.55)}
+.toast.on{display:flex;animation:tin .3s ease}
+@keyframes tin{from{opacity:0;transform:translateX(-50%) translateY(-14px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.toast-ring{position:absolute;inset:-2px;border-radius:20px;border:2px solid var(–acc);animation:ring 1.4s ease-in-out infinite;pointer-events:none}
+@keyframes ring{0%,100%{opacity:.5}50%{opacity:.08}}
+.t-ico{font-size:26px;flex-shrink:0;margin-top:1px}
+.t-body{flex:1}
+.t-lbl{font-size:9px;font-weight:700;color:var(–acc2);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px}
+.t-name{font-size:15px;font-weight:600}
+.t-when{font-size:11px;color:var(–t2);margin-top:2px}
+.t-acts{display:flex;gap:7px;margin-top:9px}
+.t-btn{border-radius:9px;padding:7px 13px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid;transition:opacity .15s}
+.t-btn:active{opacity:.75}
+.t-snz{background:rgba(248,193,64,.1);border-color:rgba(248,193,64,.3);color:var(–amber)}
+.t-dis{background:rgba(248,112,112,.1);border-color:rgba(248,112,112,.3);color:var(–coral)}
+
+/* date input fix ios */
+input[type=date]::-webkit-calendar-picker-indicator,
+input[type=time]::-webkit-calendar-picker-indicator{filter:invert(.6);cursor:pointer}
+</style>
+
+</head>
+<body>
+<div id="app">
+
+<!-- TOAST ALARMA -->
+
+<div class="toast" id="toast">
+  <div class="toast-ring"></div>
+  <div class="t-ico" id="tIco">🎂</div>
+  <div class="t-body">
+    <div class="t-lbl">ALARMA</div>
+    <div class="t-name" id="tName"></div>
+    <div class="t-when" id="tWhen"></div>
+    <div class="t-acts">
+      <button class="t-btn t-snz" onclick="snooze()">⏱ Snooze 10 min</button>
+      <button class="t-btn t-dis" onclick="dismiss()">✕ Descartar</button>
+    </div>
   </div>
 </div>
 
-<!-- Filter chips -->
-<div class="filter-bar">
-  <button class="chip active" data-filter="all" onclick="applyFilter('all', this)">Todos</button>
-  <button class="chip" data-filter="task" onclick="applyFilter('task', this)">✅ Tareas</button>
-  <button class="chip" data-filter="trabajo" onclick="applyFilter('trabajo', this)">🔧 Trabajos</button>
-  <button class="chip" data-filter="cumple" onclick="applyFilter('cumple', this)">🎂 Cumpleaños</button>
-  <button class="chip" data-filter="evento" onclick="applyFilter('evento', this)">🎉 Eventos</button>
+<!-- HEADER -->
+
+<div class="hdr">
+  <div class="hdr-left">
+    <h1>Mi Agenda</h1>
+    <p id="hdate"></p>
+  </div>
+  <div class="avatar">S</div>
 </div>
 
-<div id="eventsList" class="events-area"></div>
-<div class="empty-state" id="emptyState" style="display:none">
-  <div class="empty-icon">📋</div>
-  <div class="empty-text">No hay eventos para mostrar</div>
-  <div class="empty-sub">Tocá + para agregar uno nuevo</div>
-</div>
-‹
-›
-DoLuMaMiJuViSa
-🔔
-No hay alarmas activas
-Creá un evento con alarma
-Notificaciones
-Notificaciones push
-Vibración por defecto
-Sonido por defecto
-Tipo de alarma Chime suave Campana Pulso Alerta
-▶️ Probar sonido
-Datos
-Limpiar eventos completados Limpiar
-Exportar datos (JSON) Exportar
-Acerca de
-Versión1.0.0
-Eventos guardados0
-+
-Nuevo evento
-✕
-<div class="type-grid">
-  <div class="type-btn selected" data-type="task" onclick="selectType('task', this)">
-    <span class="type-emoji">✅</span>
-    <span class="type-label">Tarea</span>
-  </div>
-  <div class="type-btn" data-type="trabajo" onclick="selectType('trabajo', this)">
-    <span class="type-emoji">🔧</span>
-    <span class="type-label">Trabajo</span>
-  </div>
-  <div class="type-btn" data-type="cumple" onclick="selectType('cumple', this)">
-    <span class="type-emoji">🎂</span>
-    <span class="type-label">Cumpleaños</span>
-  </div>
-  <div class="type-btn" data-type="evento" onclick="selectType('evento', this)">
-    <span class="type-emoji">🎉</span>
-    <span class="type-label">Evento</span>
-  </div>
+<!-- TABS -->
+
+<div class="tabs">
+  <button class="tab on" onclick="go('dash',this)">Dashboard</button>
+  <button class="tab" onclick="go('cal',this)">Calendario</button>
+  <button class="tab" onclick="go('alrm',this)">Alarmas</button>
+  <button class="tab" onclick="go('cfg',this)">Ajustes</button>
 </div>
 
-<div class="field">
-  <label class="field-label">Nombre</label>
-  <input class="field-input" type="text" id="inputName" placeholder="ej. Reunión con cliente..." autocomplete="off" />
+<!-- DASHBOARD -->
+
+<div class="panel on" id="p-dash">
+  <div class="sums">
+    <div class="sc" onclick="filt('task')"><div class="sc-n b" id="ct">0</div><div class="sc-l">Tareas</div></div>
+    <div class="sc" onclick="filt('trabajo')"><div class="sc-n a" id="cw">0</div><div class="sc-l">Trabajos</div></div>
+    <div class="sc" onclick="filt('cumple')"><div class="sc-n p" id="cb">0</div><div class="sc-l">Cumpleaños</div></div>
+    <div class="sc" onclick="filt('evento')"><div class="sc-n g" id="ce">0</div><div class="sc-l">Eventos</div></div>
+  </div>
+  <div class="filters">
+    <button class="chip on" data-f="all" onclick="filt('all',this)">Todos</button>
+    <button class="chip" data-f="task" onclick="filt('task',this)">✅ Tareas</button>
+    <button class="chip" data-f="trabajo" onclick="filt('trabajo',this)">🔧 Trabajos</button>
+    <button class="chip" data-f="cumple" onclick="filt('cumple',this)">🎂 Cumpleaños</button>
+    <button class="chip" data-f="evento" onclick="filt('evento',this)">🎉 Eventos</button>
+  </div>
+  <div id="evlist"></div>
+  <div class="empty" id="emp" style="display:none"><div class="empty-i">📋</div><div class="empty-t">Sin eventos</div><div class="empty-s">Tocá + para agregar</div></div>
 </div>
 
-<div class="row-fields">
-  <div class="field">
-    <label class="field-label">Fecha</label>
-    <input class="field-input" type="date" id="inputDate" />
-  </div>
-  <div class="field">
-    <label class="field-label">Hora</label>
-    <input class="field-input" type="time" id="inputTime" />
+<!-- CALENDARIO -->
+
+<div class="panel" id="p-cal">
+  <div class="cal-wrap">
+    <div class="cal-hdr">
+      <button class="cal-nav" onclick="calNav(-1)">‹</button>
+      <div class="cal-my" id="calmy"></div>
+      <button class="cal-nav" onclick="calNav(1)">›</button>
+    </div>
+    <div class="cal-wk"><span>Do</span><span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sa</span></div>
+    <div class="cal-grid" id="calgrid"></div>
+    <div id="calday"></div>
   </div>
 </div>
 
-<div class="row-fields">
-  <div class="field">
-    <label class="field-label">Alarma</label>
-    <select class="field-input" id="inputAlarm">
-      <option value="none">Sin alarma</option>
-      <option value="5">5 min antes</option>
-      <option value="15" selected>15 min antes</option>
-      <option value="30">30 min antes</option>
-      <option value="60">1 hora antes</option>
-      <option value="1440">1 día antes</option>
-    </select>
-  </div>
-  <div class="field">
-    <label class="field-label">Sonido</label>
-    <select class="field-input" id="inputSound">
-      <option value="chime">Chime</option>
-      <option value="bell">Campana</option>
-      <option value="pulse">Pulso</option>
-      <option value="alert">Alerta</option>
-    </select>
+<!-- ALARMAS -->
+
+<div class="panel" id="p-alrm">
+  <div id="alrmlist" style="padding:12px 0"></div>
+  <div class="empty" id="emp2" style="display:none"><div class="empty-i">🔔</div><div class="empty-t">Sin alarmas activas</div><div class="empty-s">Creá un evento con alarma</div></div>
+</div>
+
+<!-- AJUSTES -->
+
+<div class="panel" id="p-cfg">
+  <div class="settings-wrap">
+    <div class="stitle">Notificaciones</div>
+    <div class="sblock">
+      <div class="srow"><span>Notificaciones push</span><div class="tog" id="tPush" onclick="togSet('push',this)"></div></div>
+      <div class="srow"><span>Vibración por defecto</span><div class="tog on" id="tVib" onclick="togSet('vib',this)"></div></div>
+    </div>
+    <div class="stitle">Sonido por defecto</div>
+    <div class="sblock">
+      <div class="srow"><span>Tipo de alarma</span>
+        <select class="ssel" id="defSound" onchange="cfg.sound=this.value;saveCfg()">
+          <option value="chime">Chime suave</option>
+          <option value="bell">Campana</option>
+          <option value="pulse">Pulso</option>
+          <option value="alert">Alerta</option>
+        </select>
+      </div>
+      <div class="srow"><button class="sbtn sbtn-s" onclick="snd(document.getElementById('defSound').value)">▶ Probar sonido</button></div>
+    </div>
+    <div class="stitle">Datos</div>
+    <div class="sblock">
+      <div class="srow"><span>Limpiar completados</span><button class="sbtn sbtn-d" onclick="clrDone()">Limpiar</button></div>
+      <div class="srow"><span>Exportar JSON</span><button class="sbtn sbtn-o" onclick="exportJ()">Exportar</button></div>
+    </div>
+    <div class="stitle">Acerca de</div>
+    <div class="sblock">
+      <div class="srow"><span>Versión</span><span class="sv">1.0.0</span></div>
+      <div class="srow"><span>Eventos guardados</span><span class="sv" id="tot">0</span></div>
+    </div>
   </div>
 </div>
 
-<div class="field">
-  <label class="field-label">Nota (opcional)</label>
-  <textarea class="field-input" id="inputNote" rows="2" placeholder="Detalles adicionales..."></textarea>
+</div><!-- /app -->
+
+<!-- FAB -->
+
+<button class="fab" onclick="openM()" aria-label="Agregar">+</button>
+
+<!-- MODAL -->
+
+<div class="mbk" id="mbk" onclick="mbkClick(event)">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="mtop">
+      <div class="mtitle">Nuevo evento</div>
+      <button class="mclose" onclick="closeM()">✕</button>
+    </div>
+    <div class="tgrid">
+      <div class="tbtn on" data-t="task" onclick="selT('task',this)"><div class="tbtn-ico">✅</div><div class="tbtn-lbl">Tarea</div></div>
+      <div class="tbtn" data-t="trabajo" onclick="selT('trabajo',this)"><div class="tbtn-ico">🔧</div><div class="tbtn-lbl">Trabajo</div></div>
+      <div class="tbtn" data-t="cumple" onclick="selT('cumple',this)"><div class="tbtn-ico">🎂</div><div class="tbtn-lbl">Cumpleaños</div></div>
+      <div class="tbtn" data-t="evento" onclick="selT('evento',this)"><div class="tbtn-ico">🎉</div><div class="tbtn-lbl">Evento</div></div>
+    </div>
+    <div class="fl"><label>Nombre</label><input class="fi" id="iName" type="text" placeholder="ej. Visita a cliente..."></div>
+    <div class="rr">
+      <div class="fl"><label>Fecha</label><input class="fi" id="iDate" type="date"></div>
+      <div class="fl"><label>Hora</label><input class="fi" id="iTime" type="time"></div>
+    </div>
+    <div class="rr">
+      <div class="fl"><label>Alarma</label>
+        <select class="fi" id="iAlarm">
+          <option value="none">Sin alarma</option>
+          <option value="5">5 min antes</option>
+          <option value="15" selected>15 min antes</option>
+          <option value="30">30 min antes</option>
+          <option value="60">1 hora antes</option>
+          <option value="1440">1 día antes</option>
+        </select>
+      </div>
+      <div class="fl"><label>Sonido</label>
+        <select class="fi" id="iSound">
+          <option value="chime">Chime</option>
+          <option value="bell">Campana</option>
+          <option value="pulse">Pulso</option>
+          <option value="alert">Alerta</option>
+        </select>
+      </div>
+    </div>
+    <div class="fl"><label>Nota (opcional)</label><textarea class="fi" id="iNote" rows="2" placeholder="Detalles..."></textarea></div>
+    <div class="trows">
+      <div class="trow" id="repRow" style="display:none"><span>Repetir anualmente</span><div class="tog" id="togRep" onclick="this.classList.toggle('on');fs.rep=!fs.rep"></div></div>
+      <div class="trow"><span>Vibración</span><div class="tog on" id="togVib" onclick="this.classList.toggle('on');fs.vib=!fs.vib"></div></div>
+    </div>
+    <button class="sbtn2" onclick="save()">Guardar evento</button>
+  </div>
 </div>
 
-<div class="toggles-group">
-  <div class="toggle-row" id="repeatRow" style="display:none">
-    <span class="toggle-label">Repetir anualmente</span>
-    <div class="toggle" id="toggleRepeat" onclick="toggleField('repeat', this)"></div>
-  </div>
-  <div class="toggle-row">
-    <span class="toggle-label">Vibración</span>
-    <div class="toggle on" id="toggleVib" onclick="toggleField('vib', this)"></div>
-  </div>
-</div>
+<script>
+// ─── DATA ───
+const DAYS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MO=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const MOS=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const ICO={task:'✅',trabajo:'🔧',cumple:'🎂',evento:'🎉'};
+const LBL={task:'Tarea',trabajo:'Trabajo',cumple:'Cumpleaños',evento:'Evento'};
+const ALML={none:'',5:'5 min',15:'15 min',30:'30 min',60:'1 h',1440:'1 día'};
 
-<button class="save-btn" onclick="saveEvent()">Guardar evento</button>
-<script src="app.js"></script>
+let events=[], cfg={push:false,vib:true,sound:'chime'};
+let selType='task', fs={rep:false,vib:true};
+let activeFilt='all', calDate=new Date(), calSel=null;
+let alarmTs={}, snzT=null, activeEv=null, actx=null;
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function tod(){return ds(new Date())}
+function ds(d){return d.toISOString().split('T')[0]}
+function tom(){return ds(new Date(Date.now()+86400000))}
+
+function dlbl(d){
+  if(d===tod())return'Hoy';
+  if(d===tom())return'Mañana';
+  const dt=new Date(d+'T12:00:00');
+  return DAYS[dt.getDay()].slice(0,3)+', '+dt.getDate()+' '+MOS[dt.getMonth()];
+}
+
+// ─── INIT ───
+function init(){
+  loadAll();
+  const now=new Date();
+  document.getElementById('hdate').textContent=DAYS[now.getDay()]+', '+now.getDate()+' de '+MO[now.getMonth()];
+  renderDash();
+  renderCal();
+  renderAlrm();
+  sched();
+  setInterval(sched,60000);
+  swReg();
+}
+
+// ─── STORAGE ───
+function loadAll(){
+  try{
+    const r=localStorage.getItem('ag_ev');
+    events=r?JSON.parse(r):sample();
+    const c=localStorage.getItem('ag_cfg');
+    if(c)cfg={...cfg,...JSON.parse(c)};
+  }catch(e){events=sample()}
+}
+function save2(){localStorage.setItem('ag_ev',JSON.stringify(events))}
+function saveCfg(){localStorage.setItem('ag_cfg',JSON.stringify(cfg))}
+
+function sample(){
+  const t=tod(),m=tom();
+  return[
+    {id:uid(),type:'task',name:'Revisar backup servidor Martínez',date:t,time:'10:00',alarm:'15',sound:'chime',rep:false,vib:true,done:false,note:''},
+    {id:uid(),type:'trabajo',name:'Mantenimiento PC – Local Tigre',date:t,time:'14:30',alarm:'30',sound:'bell',rep:false,vib:true,done:false,note:'Llevar SSD de repuesto'},
+    {id:uid(),type:'cumple',name:'Cumpleaños de Laura',date:t,time:'09:00',alarm:'1440',sound:'chime',rep:true,vib:false,done:false,note:''},
+    {id:uid(),type:'task',name:'Actualizar antivirus zona norte',date:t,time:'16:00',alarm:'15',sound:'pulse',rep:false,vib:true,done:false,note:''},
+    {id:uid(),type:'evento',name:'Reunión socio minería BTC',date:m,time:'11:00',alarm:'60',sound:'alert',rep:false,vib:true,done:false,note:'Ver hashrate del mes'},
+    {id:uid(),type:'trabajo',name:'Instalación cámaras – Depósito Luján',date:m,time:'09:30',alarm:'30',sound:'bell',rep:false,vib:true,done:false,note:''},
+    {id:uid(),type:'task',name:'Comprar SSD 1TB para cliente',date:m,time:'15:00',alarm:'none',sound:'chime',rep:false,vib:false,done:false,note:''},
+  ];
+}
+
+// ─── TABS ───
+function go(id,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.getElementById('p-'+id).classList.add('on');
+  btn.classList.add('on');
+  if(id==='cal')renderCal();
+  if(id==='alrm')renderAlrm();
+  if(id==='cfg'){document.getElementById('tot').textContent=events.length;document.getElementById('tPush').classList.toggle('on',cfg.push);document.getElementById('tVib').classList.toggle('on',cfg.vib);document.getElementById('defSound').value=cfg.sound}
+}
+
+// ─── DASHBOARD ───
+function renderDash(){
+  const t=tod();
+  const td=events.filter(e=>e.date===t&&!e.done);
+  document.getElementById('ct').textContent=td.filter(e=>e.type==='task').length;
+  document.getElementById('cw').textContent=td.filter(e=>e.type==='trabajo').length;
+  document.getElementById('cb').textContent=td.filter(e=>e.type==='cumple').length;
+  document.getElementById('ce').textContent=td.filter(e=>e.type==='evento').length;
+  renderList();
+}
+
+function filt(f,el){
+  activeFilt=f;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  if(el)el.classList.add('on');
+  else{const c=document.querySelector('[data-f="'+f+'"]');if(c)c.classList.add('on')}
+  renderList();
+}
+
+function renderList(){
+  let data=activeFilt==='all'?[...events]:events.filter(e=>e.type===activeFilt);
+  data.sort((a,b)=>a.date===b.date?a.time.localeCompare(b.time):a.date.localeCompare(b.date));
+  const grp={};
+  data.forEach(e=>{if(!grp[e.date])grp[e.date]=[];grp[e.date].push(e)});
+  const el=document.getElementById('evlist');
+  const emp=document.getElementById('emp');
+  if(!data.length){el.innerHTML='';emp.style.display='block';return}
+  emp.style.display='none';
+  let h='';
+  Object.keys(grp).sort().forEach(d=>{
+    h+=`<div class="ddiv">${dlbl(d)}</div>`;
+    grp[d].forEach(e=>{h+=ecard(e)});
+  });
+  el.innerHTML=h;
+}
+
+function ecard(e){
+  let bdg='';
+  if(e.alarm!=='none')bdg+=`<span class="bdg bdg-a">🔔 ${ALML[e.alarm]}</span>`;
+  if(e.rep)bdg+=`<span class="bdg bdg-r">↻ Anual</span>`;
+  return`<div class="ec ${e.type}${e.done?' done':''}">
+    <div class="chk${e.done?' on':''}" onclick="chk('${e.id}')"></div>
+    <div class="ec-ico ${e.type}">${ICO[e.type]}</div>
+    <div class="ec-info">
+      <div class="ec-name">${e.name}</div>
+      <div class="ec-meta"><span>${LBL[e.type]}</span>${bdg?'<span>·</span>'+bdg:''}</div>
+    </div>
+    <div class="ec-time">${e.time||''}</div>
+  </div>`;
+}
+
+function chk(id){
+  const e=events.find(x=>x.id===id);
+  if(e){e.done=!e.done;save2();renderDash()}
+}
+
+// ─── CALENDAR ───
+function renderCal(){
+  const y=calDate.getFullYear(),mo=calDate.getMonth();
+  document.getElementById('calmy').textContent=MO[mo].charAt(0).toUpperCase()+MO[mo].slice(1)+' '+y;
+  const fd=new Date(y,mo,1).getDay();
+  const dim=new Date(y,mo+1,0).getDate();
+  const dip=new Date(y,mo,0).getDate();
+  const t=tod();
+  let h='';
+  for(let i=fd-1;i>=0;i--){
+    const d2=dip-i,ds2=ds(new Date(y,mo-1,d2));
+    const hev=events.some(e=>e.date===ds2);
+    h+=`<div class="cday oth${hev?' hev':''}" onclick="calSday('${ds2}')">${d2}</div>`;
+  }
+  for(let d=1;d<=dim;d++){
+    const ds2=ds(new Date(y,mo,d));
+    const isT=ds2===t,isSel=ds2===calSel&&!isT,hev=events.some(e=>e.date===ds2&&!e.done);
+    h+=`<div class="cday${isT?' tod':''}${isSel?' sel':''}${hev?' hev':''}" onclick="calSday('${ds2}')">${d}${hev?'<div class="cdot"></div>':''}</div>`;
+  }
+  const tot=fd+dim,rem=tot%7===0?0:7-(tot%7);
+  for(let d=1;d<=rem;d++){
+    const ds2=ds(new Date(y,mo+1,d));
+    const hev=events.some(e=>e.date===ds2);
+    h+=`<div class="cday oth${hev?' hev':''}" onclick="calSday('${ds2}')">${d}</div>`;
+  }
+  document.getElementById('calgrid').innerHTML=h;
+  if(calSel)calDayEvs(calSel);
+}
+
+function calSday(d){calSel=d;renderCal();calDayEvs(d)}
+function calDayEvs(d){
+  const evs=events.filter(e=>e.date===d);
+  const c=document.getElementById('calday');
+  if(!evs.length){c.innerHTML=`<div class="cal-sel-title">${dlbl(d)}</div><div class="empty" style="padding:20px 0"><div class="empty-t">Sin eventos</div></div>`;return}
+  let h=`<div class="cal-sel-title">${dlbl(d)}</div>`;
+  evs.forEach(e=>{h+=ecard(e)});
+  c.innerHTML=h;
+}
+function calNav(d){calDate.setMonth(calDate.getMonth()+d);renderCal()}
+
+// ─── ALARMS TAB ───
+function renderAlrm(){
+  const wa=events.filter(e=>e.alarm!=='none'&&!e.done).sort((a,b)=>a.date===b.date?a.time.localeCompare(b.time):a.date.localeCompare(b.date));
+  const c=document.getElementById('alrmlist');
+  const emp=document.getElementById('emp2');
+  if(!wa.length){c.innerHTML='';emp.style.display='block';return}
+  emp.style.display='none';
+  c.innerHTML=wa.map(e=>`<div class="alarm-item">
+    <div class="ai-ico">${ICO[e.type]}</div>
+    <div class="ai-info">
+      <div class="ai-name">${e.name}</div>
+      <div class="ai-when">${dlbl(e.date)} · ${e.time} · ${ALML[e.alarm]} antes · 🔊 ${e.sound}${e.vib?' · 📳':''}</div>
+    </div>
+    <div class="tog${e.alarmOff?'':' on'}" onclick="togAlrm('${e.id}',this)"></div>
+  </div>`).join('');
+}
+
+function togAlrm(id,el){
+  const e=events.find(x=>x.id===id);
+  if(e){e.alarmOff=!e.alarmOff;el.classList.toggle('on');save2();sched()}
+}
+
+// ─── ALARM SCHEDULING ───
+function sched(){
+  Object.values(alarmTs).forEach(clearTimeout);alarmTs={};
+  const now=Date.now();
+  events.filter(e=>e.alarm!=='none'&&!e.done&&!e.alarmOff).forEach(e=>{
+    const et=new Date(e.date+'T'+(e.time||'00:00')+':00').getTime();
+    const at=et-(parseInt(e.alarm)*60000);
+    const dl=at-now;
+    if(dl>0&&dl<86400000)alarmTs[e.id]=setTimeout(()=>fire(e),dl);
+  });
+}
+
+function fire(ev){
+  activeEv=ev;
+  document.getElementById('tIco').textContent=ICO[ev.type];
+  document.getElementById('tName').textContent=ev.name;
+  document.getElementById('tWhen').textContent=dlbl(ev.date)+' · '+ev.time;
+  document.getElementById('toast').classList.add('on');
+  snd(ev.sound);
+  if(ev.vib&&navigator.vibrate)navigator.vibrate([200,100,200,100,400]);
+  pushN(ev);
+}
+
+function dismiss(){document.getElementById('toast').classList.remove('on');clearTimeout(snzT);activeEv=null}
+function snooze(){
+  document.getElementById('toast').classList.remove('on');
+  clearTimeout(snzT);
+  const ev=activeEv;
+  if(ev)snzT=setTimeout(()=>fire(ev),10*60*1000);
+}
+
+// ─── PUSH ───
+async function swReg(){
+  if('serviceWorker' in navigator){
+    try{
+      const r=await navigator.serviceWorker.register('sw.js');
+    }catch(e){}
+  }
+}
+async function pushN(ev){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  try{
+    const r=await navigator.serviceWorker.ready;
+    r.showNotification('⏰ '+ev.name,{body:LBL[ev.type]+' · '+dlbl(ev.date)+' · '+ev.time,icon:'icon.png',vibrate:ev.vib?[200,100,200]:[]});
+  }catch(e){
+    new Notification('⏰ '+ev.name,{body:LBL[ev.type]+' · '+ev.time,icon:'icon.png'});
+  }
+}
+
+// ─── AUDIO ───
+function getAx(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();return actx}
+function snd(t){
+  try{
+    const ax=getAx();
+    if(ax.state==='suspended')ax.resume();
+    const now=ax.currentTime;
+    if(t==='chime'){
+      [[523,0],[659,.15],[784,.3],[1047,.45]].forEach(([f,d])=>{
+        const o=ax.createOscillator(),g=ax.createGain();
+        o.connect(g);g.connect(ax.destination);o.frequency.value=f;o.type='sine';
+        g.gain.setValueAtTime(0,now+d);g.gain.linearRampToValueAtTime(.18,now+d+.03);g.gain.exponentialRampToValueAtTime(.001,now+d+.7);
+        o.start(now+d);o.stop(now+d+.7);
+      });
+    }else if(t==='bell'){
+      [[1047,0],[1319,.08],[1568,.16]].forEach(([f,d])=>{
+        const o=ax.createOscillator(),g=ax.createGain();
+        o.connect(g);g.connect(ax.destination);o.frequency.value=f;o.type='sine';
+        g.gain.setValueAtTime(.2,now+d);g.gain.exponentialRampToValueAtTime(.001,now+d+1.4);
+        o.start(now+d);o.stop(now+d+1.4);
+      });
+    }else if(t==='pulse'){
+      [0,.28,.56].forEach(d=>{
+        const o=ax.createOscillator(),g=ax.createGain();
+        o.connect(g);g.connect(ax.destination);o.frequency.value=880;o.type='square';
+        g.gain.setValueAtTime(0,now+d);g.gain.linearRampToValueAtTime(.12,now+d+.01);g.gain.exponentialRampToValueAtTime(.001,now+d+.24);
+        o.start(now+d);o.stop(now+d+.24);
+      });
+    }else if(t==='alert'){
+      [440,554,440,554,440].forEach((f,i)=>{
+        const o=ax.createOscillator(),g=ax.createGain();
+        o.connect(g);g.connect(ax.destination);o.frequency.value=f;o.type='sawtooth';
+        const d=i*.15;
+        g.gain.setValueAtTime(.1,now+d);g.gain.exponentialRampToValueAtTime(.001,now+d+.13);
+        o.start(now+d);o.stop(now+d+.13);
+      });
+    }
+  }catch(e){}
+}
+
+// ─── MODAL ───
+function openM(){
+  const now=new Date();
+  document.getElementById('iName').value='';
+  document.getElementById('iDate').value=tod();
+  document.getElementById('iTime').value=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  document.getElementById('iAlarm').value='15';
+  document.getElementById('iSound').value=cfg.sound;
+  document.getElementById('iNote').value='';
+  fs={rep:false,vib:cfg.vib};
+  document.getElementById('togRep').classList.remove('on');
+  document.getElementById('togVib').classList.toggle('on',cfg.vib);
+  document.getElementById('repRow').style.display='none';
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('on'));
+  document.querySelector('[data-t="task"]').classList.add('on');
+  selType='task';
+  document.getElementById('mbk').classList.add('on');
+  setTimeout(()=>document.getElementById('iName').focus(),300);
+}
+
+function closeM(){document.getElementById('mbk').classList.remove('on')}
+function mbkClick(e){if(e.target===document.getElementById('mbk'))closeM()}
+
+function selT(t,el){
+  selType=t;
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  const isCumple=t==='cumple';
+  document.getElementById('repRow').style.display=isCumple?'flex':'none';
+  if(isCumple){fs.rep=true;document.getElementById('togRep').classList.add('on')}
+}
+
+function save(){
+  const name=document.getElementById('iName').value.trim();
+  if(!name){document.getElementById('iName').style.borderColor='var(--coral)';document.getElementById('iName').focus();setTimeout(()=>document.getElementById('iName').style.borderColor='',2000);return}
+  events.push({
+    id:uid(),type:selType,name,
+    date:document.getElementById('iDate').value||tod(),
+    time:document.getElementById('iTime').value||'00:00',
+    alarm:document.getElementById('iAlarm').value,
+    sound:document.getElementById('iSound').value,
+    rep:fs.rep,vib:fs.vib,
+    note:document.getElementById('iNote').value.trim(),
+    done:false,alarmOff:false
+  });
+  save2();closeM();renderDash();renderAlrm();sched();snd('chime');
+}
+
+// ─── SETTINGS ───
+function togSet(k,el){
+  el.classList.toggle('on');
+  cfg[k]=el.classList.contains('on');
+  saveCfg();
+  if(k==='push'&&cfg[k]){
+    Notification.requestPermission().then(r=>{if(r!=='granted'){cfg.push=false;el.classList.remove('on');saveCfg()}});
+  }
+}
+function clrDone(){
+  if(!confirm('¿Eliminar completados?'))return;
+  events=events.filter(e=>!e.done);save2();renderDash();renderAlrm();
+}
+function exportJ(){
+  const b=new Blob([JSON.stringify(events,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='agenda-'+tod()+'.json';a.click();
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeM()});
+init();
+</script>
+
+</body>
+</html>
