@@ -218,22 +218,27 @@ textarea.fi{resize:none;line-height:1.5}
 .sheet-cancel{width:100%;background:#252535;border:1px solid #32324a;border-radius:13px;padding:15px;color:#7070a0;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;text-align:center;margin-top:3px;-webkit-appearance:none;transition:background .14s}
 .sheet-cancel:active{background:#32324a}
 
-/* ALARM TOAST */
-.toast{display:none;position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%);z-index:200;width:calc(100% - 24px);max-width:400px;background:#1e1e2e;border:1px solid #4a3aaa;border-radius:18px;padding:14px 15px;gap:12px;align-items:flex-start;box-shadow:0 8px 36px rgba(0,0,0,.7)}
-.toast.on{display:flex;animation:tin .3s ease}
-@keyframes tin{from{opacity:0;transform:translateX(-50%) translateY(-14px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-.toast-ring{position:absolute;inset:-2px;border-radius:20px;border:2px solid #7b6ff6;animation:ring 1.4s ease-in-out infinite;pointer-events:none}
-@keyframes ring{0%,100%{opacity:.6}50%{opacity:.08}}
-.t-ico{font-size:26px;flex-shrink:0;min-width:26px;margin-top:1px}
-.t-body{flex:1;min-width:0}
-.t-lbl{font-size:9px;font-weight:800;color:#a89eff;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:3px}
-.t-name{font-size:15px;font-weight:700;color:#f0f0f8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.t-when{font-size:11px;color:#7070a0;margin-top:2px}
-.t-acts{display:flex;gap:7px;margin-top:9px}
-.t-btn{border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border:1.5px solid;-webkit-appearance:none;transition:opacity .14s}
-.t-btn:active{opacity:.55}
-.t-snz{background:#1e1a0a;border-color:#6a5010;color:#f8c140}
-.t-dis{background:#2a1515;border-color:#6a2828;color:#ff7070}
+/* ALARM FULLSCREEN */
+.alarm-screen{display:none;position:fixed;inset:0;z-index:500;background:#0a0a14;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px}
+.alarm-screen.on{display:flex;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.alarm-pulse{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none}
+.alarm-pulse::before,.alarm-pulse::after{content:’’;position:absolute;border-radius:50%;border:2px solid #7b6ff6;top:50%;left:50%;transform:translate(-50%,-60%);animation:pulse-ring 2s ease-out infinite}
+.alarm-pulse::after{animation-delay:1s}
+@keyframes pulse-ring{0%{width:120px;height:120px;opacity:.8}100%{width:340px;height:340px;opacity:0}}
+.alarm-big-ico{font-size:72px;margin-bottom:16px;position:relative;z-index:1;animation:bounce 1s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.alarm-lbl{font-size:11px;font-weight:800;color:#a89eff;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+.alarm-name{font-size:26px;font-weight:700;color:#f0f0f8;text-align:center;margin-bottom:6px;line-height:1.2}
+.alarm-when{font-size:15px;color:#7070a0;margin-bottom:48px}
+.alarm-tap-btn{width:100%;max-width:320px;background:#7b6ff6;border:none;border-radius:20px;padding:22px;color:#fff;font-size:20px;font-weight:700;cursor:pointer;font-family:inherit;-webkit-appearance:none;margin-bottom:16px;box-shadow:0 0 30px rgba(123,111,246,.5);animation:glow 1.5s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(123,111,246,.4)}50%{box-shadow:0 0 50px rgba(123,111,246,.8)}}
+.alarm-tap-btn:active{opacity:.8;transform:scale(.97)}
+.alarm-bottom{display:flex;gap:12px;width:100%;max-width:320px}
+.alarm-snz,.alarm-dis{flex:1;border-radius:14px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;border:1.5px solid;-webkit-appearance:none;transition:opacity .14s}
+.alarm-snz:active,.alarm-dis:active{opacity:.6}
+.alarm-snz{background:#1e1a0a;border-color:#6a5010;color:#f8c140}
+.alarm-dis{background:#2a1515;border-color:#6a2828;color:#ff7070}
 
 /* PENDING BANNER */
 .pending-banner{background:#1e1a40;border:1px solid #4a40a0;border-radius:13px;margin:10px 12px 4px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}
@@ -253,19 +258,19 @@ input[type=time]::-webkit-calendar-picker-indicator{filter:invert(.6);cursor:poi
 <body>
 <div id="app">
 
-<!-- ALARM TOAST -->
+<!-- ALARM FULLSCREEN -->
 
-<div class="toast" id="toast">
-  <div class="toast-ring"></div>
-  <div class="t-ico" id="tIco">🎂</div>
-  <div class="t-body">
-    <div class="t-lbl">⏰ ALARMA</div>
-    <div class="t-name" id="tName"></div>
-    <div class="t-when" id="tWhen"></div>
-    <div class="t-acts">
-      <button class="t-btn t-snz" onclick="snooze()">⏱ Snooze 10 min</button>
-      <button class="t-btn t-dis" onclick="dismiss()">✕ Descartar</button>
-    </div>
+<div class="alarm-screen" id="alarmScreen">
+  <div class="alarm-pulse"></div>
+  <div class="alarm-big-ico" id="aIco">🔔</div>
+  <div class="alarm-lbl">⏰ Alarma</div>
+  <div class="alarm-name" id="aName"></div>
+  <div class="alarm-when" id="aWhen"></div>
+  <!-- THIS button triggers audio — iOS allows sound on direct user tap -->
+  <button class="alarm-tap-btn" onclick="alarmTap()">🔔 Tocá para silenciar</button>
+  <div class="alarm-bottom">
+    <button class="alarm-snz" onclick="snooze()">⏱ Snooze 10 min</button>
+    <button class="alarm-dis" onclick="dismiss()">✕ Descartar</button>
   </div>
 </div>
 
@@ -824,24 +829,41 @@ function sched(){
   });
 }
 
+let vibInterval=null;
+
 function fire(ev){
   activeEv=ev;
-  document.getElementById('tIco').textContent=ICO[ev.type];
-  document.getElementById('tName').textContent=ev.name;
-  document.getElementById('tWhen').textContent=dlbl(ev.date)+' · '+ev.time;
-  document.getElementById('toast').classList.add('on');
-  // Sound
-  snd(ev.sound||cfg.sound);
-  // Vibration — strong pattern
+  document.getElementById('aIco').textContent=ICO[ev.type];
+  document.getElementById('aName').textContent=ev.name;
+  document.getElementById('aWhen').textContent=dlbl(ev.date)+' · '+ev.time;
+  document.getElementById('alarmScreen').classList.add('on');
+  // Start vibration loop — works even without user tap
   if(ev.vib&&cfg.vib){
-    vibrate([400,150,400,150,600,150,400,150,400]);
-    setTimeout(()=>vibrate([400,150,600]),2000);
+    clearInterval(vibInterval);
+    vibrate([500,200,500,200,800]);
+    vibInterval=setInterval(()=>vibrate([500,200,500,200,800]),3000);
   }
+  // Note: sound will play when user taps the big button (alarmTap)
+  // This is required by iOS — audio needs direct user gesture
 }
 
-function dismiss(){document.getElementById('toast').classList.remove('on');clearTimeout(snzT);activeEv=null}
+function alarmTap(){
+  // This IS a user gesture — audio will work here
+  if(activeEv) snd(activeEv.sound||cfg.sound);
+  // Extra vibration burst on tap
+  if(activeEv&&activeEv.vib&&cfg.vib) vibrate([100,50,100,50,200]);
+}
+
+function dismiss(){
+  document.getElementById('alarmScreen').classList.remove('on');
+  clearTimeout(snzT);clearInterval(vibInterval);vibInterval=null;
+  vibrate([]);// stop vibration
+  activeEv=null;
+}
 function snooze(){
-  document.getElementById('toast').classList.remove('on');clearTimeout(snzT);
+  document.getElementById('alarmScreen').classList.remove('on');
+  clearTimeout(snzT);clearInterval(vibInterval);vibInterval=null;
+  vibrate([]);
   const ev=activeEv;
   if(ev)snzT=setTimeout(()=>fire(ev),10*60*1000);
   flash('⏱ Snooze por 10 min');
