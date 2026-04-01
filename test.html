@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test Sonido</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#111;color:#fff;font-family:-apple-system,sans-serif;padding:24px;display:flex;flex-direction:column;gap:14px}
+h2{font-size:18px;margin-bottom:4px}
+p{font-size:13px;color:#888;margin-bottom:8px}
+button{width:100%;padding:18px;border-radius:14px;border:none;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit}
+.b1{background:#7b6ff6;color:#fff}
+.b2{background:#34d19a;color:#000}
+.b3{background:#f8c140;color:#000}
+.b4{background:#f87070;color:#fff}
+.b5{background:#5fa4f8;color:#fff}
+#log{background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:14px;font-size:12px;color:#aaa;min-height:80px;white-space:pre-wrap;font-family:monospace}
+</style>
+</head>
+<body>
+<h2>🔊 Diagnóstico de Audio</h2>
+<p>Tocá cada botón y escribime qué pasa</p>
+
+<button class="b1" onclick="test1()">1. Beep simple (AudioContext)</button>
+<button class="b2" onclick="test2()">2. Melodía (chime)</button>
+<button class="b3" onclick="test3()">3. Vibración</button>
+<button class="b4" onclick="test4()">4. Audio HTML5 (data URI)</button>
+<button class="b5" onclick="test5()">5. Todo junto</button>
+
+<div id="log">Esperando...</div>
+
+<script>
+let actx=null;
+const log=s=>{
+  document.getElementById('log').textContent+='\n'+new Date().toLocaleTimeString()+' → '+s;
+};
+
+function getCtx(){
+  if(!actx){
+    try{
+      actx=new(window.AudioContext||window.webkitAudioContext)();
+      log('AudioContext creado. Estado: '+actx.state);
+    }catch(e){log('ERROR creando AudioContext: '+e)}
+  }
+  if(actx.state==='suspended'){
+    actx.resume().then(()=>log('AudioContext resumido OK')).catch(e=>log('ERROR resume: '+e));
+  }
+  return actx;
+}
+
+function beep(freq,dur,vol){
+  try{
+    const ctx=getCtx();
+    const o=ctx.createOscillator();
+    const g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.frequency.value=freq;o.type='sine';
+    g.gain.setValueAtTime(vol||0.8,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+(dur||0.5));
+    o.start(ctx.currentTime);
+    o.stop(ctx.currentTime+(dur||0.5));
+    return true;
+  }catch(e){log('ERROR beep: '+e);return false}
+}
+
+function test1(){
+  log('Test 1: beep simple...');
+  const ok=beep(880,0.5,0.9);
+  log(ok?'Oscilador iniciado':'Falló');
+}
+
+function test2(){
+  log('Test 2: chime...');
+  try{
+    const ctx=getCtx();
+    [[523,0],[659,.2],[784,.4],[1047,.6]].forEach(([f,d])=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.frequency.value=f;o.type='sine';
+      const t=ctx.currentTime+d;
+      g.gain.setValueAtTime(0.9,t);
+      g.gain.exponentialRampToValueAtTime(0.001,t+0.8);
+      o.start(t);o.stop(t+0.8);
+    });
+    log('Chime iniciado');
+  }catch(e){log('ERROR chime: '+e)}
+}
+
+function test3(){
+  log('Test 3: vibración...');
+  if(!navigator.vibrate){log('vibrate NO soportado en este dispositivo/browser');return}
+  try{
+    const ok=navigator.vibrate([500,200,500,200,800]);
+    log('vibrate() retornó: '+ok);
+  }catch(e){log('ERROR vibrate: '+e)}
+}
+
+// Generate a short WAV in base64 (440Hz beep)
+function test4(){
+  log('Test 4: audio HTML5...');
+  try{
+    // Tiny WAV: 440Hz sine, 0.5s, 8-bit, 8000Hz mono
+    const sr=8000,dur=0.5,freq=440;
+    const n=Math.floor(sr*dur);
+    const buf=new Uint8Array(44+n);
+    const dv=new DataView(buf.buffer);
+    // RIFF header
+    [82,73,70,70].forEach((b,i)=>dv.setUint8(i,b)); // "RIFF"
+    dv.setUint32(4,36+n,true);
+    [87,65,86,69].forEach((b,i)=>dv.setUint8(8+i,b)); // "WAVE"
+    [102,109,116,32].forEach((b,i)=>dv.setUint8(12+i,b)); // "fmt "
+    dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);
+    dv.setUint32(24,sr,true);dv.setUint32(28,sr,true);
+    dv.setUint16(32,1,true);dv.setUint16(34,8,true);
+    [100,97,116,97].forEach((b,i)=>dv.setUint8(36+i,b)); // "data"
+    dv.setUint32(40,n,true);
+    for(let i=0;i<n;i++){
+      buf[44+i]=Math.round(128+127*Math.sin(2*Math.PI*freq*i/sr));
+    }
+    const blob=new Blob([buf],{type:'audio/wav'});
+    const url=URL.createObjectURL(blob);
+    const a=new Audio(url);
+    a.volume=1;
+    a.play()
+      .then(()=>log('Audio HTML5 reproduciendo OK'))
+      .catch(e=>log('ERROR play(): '+e.name+' - '+e.message));
+  }catch(e){log('ERROR test4: '+e)}
+}
+
+function test5(){
+  log('Test 5: todo junto...');
+  beep(440,0.3,0.9);
+  setTimeout(()=>beep(880,0.3,0.9),350);
+  setTimeout(()=>beep(1320,0.5,0.9),700);
+  if(navigator.vibrate)navigator.vibrate([300,100,300]);
+  log('Combinado lanzado');
+}
+
+document.getElementById('log').textContent='Listo. Tocá un botón.';
+log('AudioContext disponible: '+(typeof AudioContext!=='undefined'||typeof webkitAudioContext!=='undefined'));
+log('vibrate disponible: '+(typeof navigator.vibrate!=='undefined'));
+</script>
+
+</body>
+</html>
