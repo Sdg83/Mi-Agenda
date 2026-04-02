@@ -575,9 +575,10 @@ function init(){
   document.getElementById('hdate').textContent=DAYS[now.getDay()]+', '+now.getDate()+' de '+MO[now.getMonth()];
   checkMissed();
   renderDash();renderCal();renderAlrm();
-  sched();
-  setInterval(tickAlarms,20000);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkMissed();sched()}});
+  // Tick every 5 seconds — directly compares clock, no setTimeout for alarms
+  setInterval(tickAlarms,5000);
+  tickAlarms(); // run immediately on load
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkMissed();tickAlarms()}});
 }
 
 // ── MISSED ALARMS ──
@@ -609,16 +610,21 @@ function showMissed(){
   missedOnOpen=[];
 }
 
-// ── TICK (every 20s while open) ──
+// ── TICK — runs every 5s, checks time directly, no setTimeout for alarms ──
+const firedIds=new Set();
 function tickAlarms(){
   const now=Date.now();
+  localStorage.setItem('ag_last',now.toString());
   events.filter(e=>e.alarm!=='none'&&!e.done&&!e.alarmOff).forEach(e=>{
-    if(alarmTs[e.id])return;
+    if(firedIds.has(e.id))return;
     const et=new Date(e.date+'T'+(e.time||'00:00')+':00').getTime();
     const at=et-(parseInt(e.alarm)*60000);
     const diff=at-now;
-    if(diff>0&&diff<=20000){
-      alarmTs[e.id]=setTimeout(()=>{delete alarmTs[e.id];fire(e)},diff);
+    // Fire if we are within a 10-second window of alarm time
+    if(diff>=-10000&&diff<=5000){
+      firedIds.add(e.id);
+      setTimeout(()=>firedIds.delete(e.id),120000);
+      fire(e);
     }
   });
 }
@@ -811,22 +817,10 @@ function togAlrm(id,el){
   if(e){e.alarmOff=!e.alarmOff;el.classList.toggle('on');save2();sched();flash(e.alarmOff?'🔕 Alarma desactivada':'🔔 Alarma activada')}
 }
 
-// ── ALARM SCHEDULING ──
+// ── ALARM SCHEDULING — now tick-based, this just resets firedIds for edited events ──
 function sched(){
-  Object.values(alarmTs).forEach(clearTimeout);alarmTs={};
-  const now=Date.now();
-  events.filter(e=>e.alarm!=='none'&&!e.done&&!e.alarmOff).forEach(e=>{
-    const et=new Date(e.date+'T'+(e.time||'00:00')+':00').getTime();
-    const at=et-(parseInt(e.alarm)*60000);
-    const dl=at-now;
-    if(dl>0&&dl<86400000){
-      alarmTs[e.id]=setTimeout(()=>{delete alarmTs[e.id];fire(e)},dl);
-    }
-    // Fire immediately if overdue < 3 min (just opened app)
-    if(dl>-180000&&dl<=0&&dl>-500){
-      setTimeout(()=>fire(e),600);
-    }
-  });
+  // When an event is saved/edited, clear its firedId so it can fire again
+  firedIds.clear();
 }
 
 let vibInterval=null;
@@ -837,21 +831,22 @@ function fire(ev){
   document.getElementById('aName').textContent=ev.name;
   document.getElementById('aWhen').textContent=dlbl(ev.date)+' · '+ev.time;
   document.getElementById('alarmScreen').classList.add('on');
-  // Start vibration loop — works even without user tap
-  if(ev.vib&&cfg.vib){
-    clearInterval(vibInterval);
-    vibrate([500,200,500,200,800]);
-    vibInterval=setInterval(()=>vibrate([500,200,500,200,800]),3000);
-  }
-  // Note: sound will play when user taps the big button (alarmTap)
-  // This is required by iOS — audio needs direct user gesture
+  // Sound plays when user taps the big button (iOS requires user gesture)
+  // But we pre-warm the AudioContext now so it's ready
+  try{const ctx=getCtx();if(ctx.state==='suspended')ctx.resume()}catch(e){}
 }
 
 function alarmTap(){
-  // This IS a user gesture — audio will work here
+  // Direct user tap = iOS allows audio here
   if(activeEv) snd(activeEv.sound||cfg.sound);
-  // Extra vibration burst on tap
-  if(activeEv&&activeEv.vib&&cfg.vib) vibrate([100,50,100,50,200]);
+  // Re-play every 3s until dismissed, using the interval
+  clearInterval(vibInterval);
+  if(activeEv){
+    const ev=activeEv;
+    vibInterval=setInterval(()=>{
+      if(activeEv) snd(ev.sound||cfg.sound);
+    },3500);
+  }
 }
 
 function dismiss(){
